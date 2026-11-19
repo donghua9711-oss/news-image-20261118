@@ -4,10 +4,12 @@
 Takes the chosen editorial illustration (candidate A: Trump, Xi and Putin
 shaking hands under an APEC banner, US/China/Russia flags, Shenzhen
 skyline, faint drones and smoke on the horizon) and adds a newspaper
-footer band with crisp, program-drawn text — the date the image sums up
-(the judge's first criterion is that the image names its day) and the
-day's other big stories as short headlines (its second criterion is
-breadth across regions and fields).
+footer band with crisp, program-drawn text: exactly two lines, focused
+on what the photo itself shows — the date the image sums up (the judge's
+first criterion is that the image names its day) and the meeting in the
+picture. An earlier draft carried two extra headline lines (Iran drones,
+Ukraine drones); the owner ordered them removed so the text stays
+focused on the photo.
 
 All text is drawn here with PIL, never by the image generator, so no
 lettering can come out garbled. Output: entry.png, 1024x1024.
@@ -57,25 +59,28 @@ def main():
     canvas.paste(hero, (0, 0))
     draw = ImageDraw.Draw(canvas)
 
-    y = hero_h + 10
+    # Footer text: exactly two lines, focused on what the photo shows —
+    # the date it sums up and the meeting in the picture. The block is
+    # measured and centred vertically in the band, so no empty gap is
+    # left where the removed headline lines used to sit.
     date_line = "WEDNESDAY 18 NOVEMBER 2026"
-    font = fit_font(draw, date_line, W - 40, 46)
-    centered(draw, y, date_line, font, GOLD)
-    y += 58
-
+    date_font = fit_font(draw, date_line, W - 40, 46)
     caption = "SHENZHEN: TRUMP, XI & PUTIN MEET AT APEC"
-    font = fit_font(draw, caption, W - 40, 30)
-    centered(draw, y, caption, font, WHITE)
-    y += 42
+    cap_font = fit_font(draw, caption, W - 40, 30)
 
-    headlines = [
-        "IRAN DRONES HIT GULF BASES - U.S. STRIKES BACK",
-        "141 DRONES OVER UKRAINE - GAZA TRUCE WARNING - SENATE FLIPS",
-    ]
-    for line in headlines:
-        font = fit_font(draw, line, W - 40, 26)
-        centered(draw, y, line, font, WHITE)
-        y += 34
+    def line_h(text, font):
+        bbox = draw.textbbox((0, 0), text, font=font)
+        return bbox[3] - bbox[1], bbox[1]
+
+    date_h, date_top = line_h(date_line, date_font)
+    cap_h, cap_top = line_h(caption, cap_font)
+    gap = 26
+    block_h = date_h + gap + cap_h
+    y = hero_h + (band_h - block_h) // 2
+    centered(draw, y - date_top, date_line, date_font, GOLD)
+    y += date_h + gap
+    centered(draw, y - cap_top, caption, cap_font, WHITE)
+    y += cap_h
 
     assert y <= W, f"text overflow: y={y}"
     canvas.save(OUT, optimize=True)
